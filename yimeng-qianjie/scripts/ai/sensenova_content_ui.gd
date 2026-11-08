@@ -386,6 +386,15 @@ func _run_generation() -> void:
 		return
 	_pending_generation_name = _generation_name.text.strip_edges()
 	_pending_generation_kind = _selected_generation_content_kind()
+	# 图片模式下，将常用中文类目自动映射到游戏实际读取的图片资源类型。
+	if _generation_kind.selected != 0:
+		match _pending_generation_kind:
+			"item":
+				_pending_generation_kind = "item_icon"
+			"skill":
+				_pending_generation_kind = "skill_art"
+			"npc":
+				_pending_generation_kind = "portrait"
 	_pending_generation_prompt = prompt
 	_generation_run_button.disabled = true
 	_generation_status.text = "请求已发送，等待商汤响应……"
