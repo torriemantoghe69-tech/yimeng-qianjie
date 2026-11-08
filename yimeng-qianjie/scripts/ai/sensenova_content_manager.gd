@@ -22,14 +22,18 @@ var _pending_record_data: Dictionary = {}
 
 
 func _ready() -> void:
+	call_deferred("_connect_services")
+
+
+func _connect_services() -> void:
 	_api = get_node_or_null("/root/SenseNovaAPI")
 	_registry = get_node_or_null("/root/SenseNovaContentRegistry")
 	if _api != null:
-		if _api.has_signal("chat_finished"):
+		if _api.has_signal("chat_finished") and not _api.chat_finished.is_connected(_on_chat_finished):
 			_api.chat_finished.connect(_on_chat_finished)
-		if _api.has_signal("image_saved"):
+		if _api.has_signal("image_saved") and not _api.image_saved.is_connected(_on_image_saved):
 			_api.image_saved.connect(_on_image_saved)
-		if _api.has_signal("request_failed"):
+		if _api.has_signal("request_failed") and not _api.request_failed.is_connected(_on_request_failed):
 			_api.request_failed.connect(_on_request_failed)
 
 
@@ -193,6 +197,8 @@ func request_encounter(event_name: String, context: String = "") -> void:
 
 
 func _on_chat_finished(success: bool, content: String, raw: Dictionary) -> void:
+	if _pending_record_key.strip_edges().is_empty():
+		return
 	var text := content.strip_edges()
 	if text.find("姓名：") != -1 or text.find("名称：") != -1:
 		npc_generated.emit(success, content)
@@ -219,6 +225,8 @@ func _on_chat_finished(success: bool, content: String, raw: Dictionary) -> void:
 
 
 func _on_image_saved(success: bool, local_path: String, raw: Dictionary) -> void:
+	if _pending_image_kind.is_empty():
+		return
 	if not success:
 		_clear_pending_record()
 		return
