@@ -605,16 +605,6 @@ func _record_display_text(record: Dictionary) -> String:
 	return "%s · %s · %s" % [kind, key, stamp]
 
 
-func _selected_record() -> Dictionary:
-	var items := _record_list.get_selected_items()
-	if items.is_empty():
-		return {}
-	var meta: Variant = _record_list.get_item_metadata(items[0])
-	if meta is Dictionary:
-		return meta
-	return {}
-
-
 func _time_text(unix_time: int) -> String:
 	if unix_time <= 0:
 		return "未知时间"
