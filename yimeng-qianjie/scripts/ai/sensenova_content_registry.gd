@@ -183,8 +183,12 @@ func restore_backup(backup_path: String) -> bool:
 	return true
 
 
-func upsert_generated_content(kind: String, key: String, data: Dictionary, local_path: String = "", extra_paths: Array[String] = []) -> void:
-	set_record(kind, key, data, local_path, extra_paths)
+func upsert_generated_content(kind: String, key: String, data: Dictionary, local_path: String = "", extra_paths: Array = []) -> void:
+	# call() 传入的 [] 是普通 Array，不能直接匹配 Array[String]。
+	var typed_extra_paths: Array[String] = []
+	for path_value in extra_paths:
+		typed_extra_paths.append(str(path_value))
+	set_record(kind, key, data, local_path, typed_extra_paths)
 
 
 func get_index_snapshot() -> Dictionary:
