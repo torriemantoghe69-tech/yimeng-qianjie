@@ -11,6 +11,7 @@ const KIND_OPTIONS: Array[String] = [
 	"item_icon",
 	"skill",
 	"skill_icon",
+	"skill_art",
 	"background",
 	"encounter",
 ]
@@ -406,16 +407,16 @@ func _start_batch_illustrations() -> void:
 	_batch_image_done = 0
 	for item_name: Variant in GameData.TREASURES.keys():
 		var info: Dictionary = GameData.treasure_info(str(item_name))
-		_batch_image_queue.append({"kind": "item_icon", "key": str(item_name), "prompt": "中国古典修仙游戏道具图标，单件物品居中，精致材质，纯净背景，无文字无水印。名称：" + str(item_name) + "。设定：" + str(info.get("desc", ""))})
+		_queue_batch_image("item_icon", str(item_name), "中国古典修仙游戏道具图标，单件物品居中，精致材质，纯净背景，无文字无水印。名称：" + str(item_name) + "。设定：" + str(info.get("desc", "")))
 	for item_name: Variant in GameData.EQUIPMENT.keys():
 		var info: Dictionary = GameData.treasure_info(str(item_name))
-		_batch_image_queue.append({"kind": "item_icon", "key": str(item_name), "prompt": "中国古典修仙游戏装备图标，单件装备完整展示，国风概念美术，纯净背景，无文字无水印。名称：" + str(item_name) + "。设定：" + str(info.get("desc", ""))})
+		_queue_batch_image("item_icon", str(item_name), "中国古典修仙游戏装备图标，单件装备完整展示，国风概念美术，纯净背景，无文字无水印。名称：" + str(item_name) + "。设定：" + str(info.get("desc", "")))
 	for skill_value: Variant in BattleSystem.all_skills():
 		if skill_value is Dictionary:
 			var skill: Dictionary = skill_value
 			var skill_name := str(skill.get("name", skill.get("id", "")))
 			if not skill_name.is_empty():
-				_batch_image_queue.append({"kind": "skill_art", "key": skill_name, "prompt": "中国古典修仙游戏技能插画，国风水墨玄幻概念美术，表现施展瞬间，主体清晰，无文字无边框无水印。技能：" + skill_name + "；分类：" + str(skill.get("category", "武技")) + "；描述：" + str(skill.get("desc", ""))})
+				_queue_batch_image("skill_art", skill_name, "中国古典修仙游戏技能插画，国风水墨玄幻概念美术，表现施展瞬间，主体清晰，无文字无边框无水印。技能：" + skill_name + "；分类：" + str(skill.get("category", "武技")) + "；描述：" + str(skill.get("desc", "")))
 	var scene: Node = get_tree().current_scene
 	if scene != null:
 		var state_value: Variant = scene.get("state")
@@ -426,21 +427,39 @@ func _start_batch_illustrations() -> void:
 					var npc: Dictionary = npc_value
 					var npc_name := str(npc.get("name", ""))
 					if not npc_name.is_empty():
-						_batch_image_queue.append({"kind": "portrait", "key": npc_name, "prompt": "中国古典修仙游戏人物半身立绘，东方玄幻国风，人物清晰，纯净背景，无文字无水印。人物：" + npc_name + "；境界：" + str(npc.get("realm", "")) + "；设定：" + str(npc.get("text", npc.get("description", "")))})
+						_queue_batch_image("portrait", npc_name, "中国古典修仙游戏人物半身立绘，东方玄幻国风，人物清晰，纯净背景，无文字无水印。人物：" + npc_name + "；境界：" + str(npc.get("realm", "")) + "；设定：" + str(npc.get("text", npc.get("description", ""))))
 	_batch_image_total = _batch_image_queue.size()
 	if _batch_image_total == 0:
-		_generation_status.text = "没有找到可配图的游戏内容。"
+		_generation_status.text = "没有需要新生成的配图；已有图片已自动跳过。"
 		return
 	_generation_run_button.disabled = true
-	_generation_status.text = "准备生成 %d 张配图……" % _batch_image_total
+	_generation_status.text = "准备生成 %d 张缺失配图（已有图片已跳过）……" % _batch_image_total
 	_process_next_batch_image()
+
+
+func _queue_batch_image(kind: String, key: String, prompt: String) -> void:
+	if kind.strip_edges().is_empty() or key.strip_edges().is_empty():
+		return
+	if _registry != null and _registry.has_method("get_record"):
+		var record_value: Variant = _registry.call("get_record", kind, key)
+		if record_value is Dictionary:
+			var record: Dictionary = record_value
+			var saved_path := str(record.get("local_path", ""))
+			if not saved_path.is_empty() and FileAccess.file_exists(saved_path):
+				return
+	for queued_value: Variant in _batch_image_queue:
+		if queued_value is Dictionary:
+			var queued: Dictionary = queued_value
+			if str(queued.get("kind", "")) == kind and str(queued.get("key", "")) == key:
+				return
+	_batch_image_queue.append({"kind": kind, "key": key, "prompt": prompt})
 
 
 func _process_next_batch_image() -> void:
 	if _batch_image_queue.is_empty():
 		_generation_run_button.disabled = false
-		_generation_status.text = "批量配图完成：%d / %d 张已保存。" % [_batch_image_done, _batch_image_total]
-		_generation_output.text = "批量生成结束；失败项目可单独重试。"
+		_generation_status.text = "批量配图结束：成功 %d / 待生成 %d 张（已有图片已跳过）。" % [_batch_image_done, _batch_image_total]
+		_generation_output.text = "批量生成队列已处理完毕。失败项目不会覆盖已有图片，可再次点击批量生成重试。"
 		_refresh_all()
 		_batch_image_total = 0
 		return
