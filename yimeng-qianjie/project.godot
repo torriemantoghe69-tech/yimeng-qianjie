@@ -20,10 +20,10 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-SenseNovaAPI="*res://scripts/ai/sensenova_api.gd"
-SenseNovaContentManager="*res://scripts/ai/sensenova_content_manager.gd"
-SenseNovaContentRegistry="*res://scripts/ai/sensenova_content_registry.gd"
-SenseNovaContentUI="*res://scripts/ai/sensenova_content_ui.gd"
+SenseNovaAPI="*res://scripts/ai/sensenova_api_autoload.gd"
+SenseNovaContentManager="*res://scripts/ai/sensenova_content_manager_autoload.gd"
+SenseNovaContentRegistry="*res://scripts/ai/sensenova_content_registry_autoload.gd"
+SenseNovaContentUI="*res://scripts/ai/sensenova_content_ui_autoload.gd"
 
 [display]
 
