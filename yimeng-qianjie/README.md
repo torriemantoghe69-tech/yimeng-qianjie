@@ -22,6 +22,17 @@ SenseNovaAPI.request_chat("生成一个元婴期妖修简介")
 SenseNovaAPI.request_image("古风修仙宗门山门，水墨氛围")
 ```
 
+更高层的封装是 `SenseNovaContentManager`，用来按业务直接请求：
+
+```gdscript
+var ai := SenseNovaContentManager.new()
+add_child(ai)
+ai.request_npc("柳青衣", "金丹初期", "清冷", "出身寒门散修", "女")
+ai.request_item("青霜剑", "武器", "玄阶", "寒霜与破邪")
+ai.request_skill("焚天诀", "功法", "金丹", "火系爆发与持续灼烧")
+ai.request_background("黑风山", "阴风、残月、雾气", "战斗背景")
+```
+
 配置文件读取顺序：
 
 1. `user://sensenova_config.json`
@@ -48,6 +59,8 @@ scripts/ink_background.gd
 scripts/music_manager.gd
 tools/smoke_test.gd
 scripts/ai/sensenova_api.gd
+scripts/ai/ai_prompt_factory.gd
+scripts/ai/sensenova_content_manager.gd
 ```
 
 ## 材料与精华
