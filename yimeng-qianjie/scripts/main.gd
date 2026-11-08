@@ -2658,6 +2658,14 @@ func _open_npc_interaction(member: Dictionary, faction_name: String) -> void:
 	var affinity := int(record.get("affinity", 0))
 	var box := _open_modal(Vector2(560, 470), true, Callable())
 	_add_modal_heading(box, "%s · %s" % [faction_name, npc_rank], npc_name, "%s · 好感度 %d · 关系：%s" % [npc_realm, affinity, _npc_relation(npc_name, faction_name)])
+	var portrait_texture := _ai_content_texture("portrait", npc_name)
+	if portrait_texture != null:
+		var portrait := TextureRect.new()
+		portrait.custom_minimum_size = Vector2(0, 190)
+		portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		portrait.texture = portrait_texture
+		box.add_child(portrait)
 	var intro := String(record.get("intro", "此人神色平静，正在处理自己的事务。"))
 	var intro_label := _label(intro, 13, INK_SOFT)
 	intro_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
