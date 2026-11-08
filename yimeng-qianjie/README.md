@@ -43,6 +43,13 @@ ai.request_background("黑风山", "阴风、残月、雾气", "战斗背景")
 - 删除内容时可同步删除本地图片缓存
 - 索引文件默认保存在 `user://ai_content_index.json`
 
+现在还多了一个 `SenseNovaContentUI` 浮层面板：
+
+- 右下角可以直接打开“内容管理”
+- 能查看、搜索、删除、清空条目
+- 能手动录入文本内容并保存到索引
+- 删除时会同步清理关联缓存
+
 配置文件读取顺序：
 
 1. `user://sensenova_config.json`
@@ -72,6 +79,7 @@ scripts/ai/sensenova_api.gd
 scripts/ai/ai_prompt_factory.gd
 scripts/ai/sensenova_content_manager.gd
 scripts/ai/sensenova_content_registry.gd
+scripts/ai/sensenova_content_ui.gd
 ```
 
 ## 材料与精华
