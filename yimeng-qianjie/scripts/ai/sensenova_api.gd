@@ -36,7 +36,7 @@ func load_config() -> void:
 	_apply_config(data)
 
 
-func save_config() -> void:
+func save_config() -> bool:
 	var data: Dictionary = {
 		"api_key": api_key,
 		"base_url": base_url,
@@ -49,8 +49,9 @@ func save_config() -> void:
 	var file := FileAccess.open(CONFIG_PATH, FileAccess.WRITE)
 	if file == null:
 		request_failed.emit("config", "Unable to write config file: %s" % CONFIG_PATH)
-		return
+		return false
 	file.store_string(JSON.stringify(data, "\t"))
+	return true
 
 
 func request_chat(prompt: String, system_prompt: String = "", temperature: float = 0.7, max_tokens: int = 1024) -> void:
