@@ -4,6 +4,8 @@ extends Node
 ## 以后无论是 NPC、装备、功法还是背景图，都可以统一登记到这里。
 
 const INDEX_PATH := "user://ai_content_index.json"
+const BACKUP_DIR := "user://ai_content_backups"
+const AI_CACHE_PREFIX := "user://ai_cache/"
 const DEFAULT_VERSION := 1
 
 var _index: Dictionary = {
@@ -46,6 +48,8 @@ func set_record(kind: String, key: String, data: Dictionary, local_path: String 
 	if kind_key == "" or item_key == "":
 		return
 	var items := _ensure_items_bucket(kind_key)
+	if items.has(item_key):
+		_backup_record(kind, key, items[item_key])
 	var record: Dictionary = {
 		"kind": kind,
 		"key": key,
@@ -109,6 +113,7 @@ func remove_record(kind: String, key: String, delete_files: bool = true) -> bool
 	if not bucket.has(item_key):
 		return false
 	var record: Dictionary = bucket[item_key]
+	_backup_record(kind, key, record)
 	if delete_files:
 		_delete_record_files(record)
 	bucket.erase(item_key)
@@ -128,6 +133,7 @@ func clear_kind(kind: String, delete_files: bool = true) -> int:
 	var bucket: Dictionary = items[kind_key]
 	var count := 0
 	for entry_key in bucket.keys():
+		_backup_record(kind, str(bucket[entry_key].get("key", entry_key)), bucket[entry_key])
 		var record: Dictionary = bucket[entry_key]
 		if delete_files:
 			_delete_record_files(record)
@@ -144,6 +150,7 @@ func clear_all(delete_files: bool = true) -> int:
 	for kind_key in items.keys():
 		var bucket: Dictionary = items[kind_key]
 		for entry_key in bucket.keys():
+			_backup_record(str(bucket[entry_key].get("kind", kind_key)), str(bucket[entry_key].get("key", entry_key)), bucket[entry_key])
 			if delete_files:
 				_delete_record_files(bucket[entry_key])
 			total += 1
@@ -183,14 +190,31 @@ func _delete_record_files(record: Dictionary) -> void:
 
 
 func _delete_file(path: String) -> void:
-	var absolute := path
-	if path.begins_with("user://") or path.begins_with("res://"):
-		absolute = ProjectSettings.globalize_path(path)
+	# 仅允许删除本工具生成的缓存；绝不删除 res:// 工程资源或其他 user:// 文件。
+	if not path.begins_with(AI_CACHE_PREFIX):
+		return
+	var absolute := ProjectSettings.globalize_path(path)
+	var cache_absolute := ProjectSettings.globalize_path(AI_CACHE_PREFIX)
+	if not absolute.begins_with(cache_absolute):
+		return
 	if FileAccess.file_exists(absolute):
 		var err := DirAccess.remove_absolute(absolute)
 		if err != OK:
-			# 删除失败不影响索引更新。
-			pass
+			push_warning("无法删除 AI 缓存文件：%s" % path)
+
+
+func _backup_record(kind: String, key: String, record: Variant) -> void:
+	var dir_error := DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(BACKUP_DIR))
+	if dir_error != OK and dir_error != ERR_ALREADY_EXISTS:
+		push_warning("无法创建 AI 内容备份目录。")
+		return
+	var safe_name := _safe_key(kind + "_" + key)
+	var backup_path := "%s/%s_%d.json" % [BACKUP_DIR, safe_name, Time.get_unix_time_from_system()]
+	var file := FileAccess.open(backup_path, FileAccess.WRITE)
+	if file == null:
+		push_warning("无法写入 AI 内容备份：%s" % backup_path)
+		return
+	file.store_string(JSON.stringify({"kind": kind, "key": key, "record": record}, "\t"))
 
 
 func _ensure_parent_dir(path: String) -> void:
