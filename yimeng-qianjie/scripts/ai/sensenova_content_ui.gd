@@ -42,6 +42,10 @@ var _generation_status: Label
 var _generation_kind: OptionButton
 var _generation_content_kind: OptionButton
 var _generation_name: LineEdit
+var _generation_run_button: Button
+var _pending_generation_name: String = ""
+var _pending_generation_kind: String = ""
+var _pending_generation_prompt: String = ""
 
 func _ready() -> void:
 	_api = get_node_or_null("/root/SenseNovaAPI")
@@ -295,10 +299,10 @@ func _build_api_section() -> Control:
 	main.add_child(_generation_prompt)
 	var actions := HBoxContainer.new()
 	main.add_child(actions)
-	var run_button := Button.new()
-	run_button.text = "开始生成"
-	run_button.pressed.connect(_run_generation)
-	actions.add_child(run_button)
+	_generation_run_button = Button.new()
+	_generation_run_button.text = "开始生成"
+	_generation_run_button.pressed.connect(_run_generation)
+	actions.add_child(_generation_run_button)
 	_generation_status = Label.new()
 	_generation_status.text = "等待配置"
 	_generation_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -341,6 +345,10 @@ func _run_generation() -> void:
 	if prompt.is_empty():
 		_generation_status.text = "请先输入生成要求。"
 		return
+	_pending_generation_name = _generation_name.text.strip_edges()
+	_pending_generation_kind = _selected_generation_content_kind()
+	_pending_generation_prompt = prompt
+	_generation_run_button.disabled = true
 	_generation_status.text = "请求已发送，等待商汤响应……"
 	_generation_output.clear()
 	if _generation_kind.selected == 0:
@@ -352,22 +360,24 @@ func _run_generation() -> void:
 func _on_api_chat_finished(success: bool, content: String, _raw: Dictionary) -> void:
 	_generation_output.text = content
 	_generation_status.text = "文本生成完成。" if success else "文本生成失败。"
-	if success and _registry != null and not _generation_name.text.strip_edges().is_empty() and _registry.has_method("upsert_generated_content"):
-		var content_kind := _selected_generation_content_kind()
-		_registry.call("upsert_generated_content", content_kind, _generation_name.text.strip_edges(), {"text": content, "source": "sensenova_chat", "prompt": _generation_prompt.text.strip_edges()}, "", [])
+	if _generation_run_button != null:
+		_generation_run_button.disabled = false
+	if success and _registry != null and not _pending_generation_name.is_empty() and _registry.has_method("upsert_generated_content"):
+		_registry.call("upsert_generated_content", _pending_generation_kind, _pending_generation_name, {"text": content, "source": "sensenova_chat", "prompt": _pending_generation_prompt}, "", [])
 		_refresh_all()
-		_select_by_key(content_kind, _generation_name.text.strip_edges())
+		_select_by_key(_pending_generation_kind, _pending_generation_name)
 
 
 func _on_api_image_saved(success: bool, local_path: String, _raw: Dictionary) -> void:
+	if _generation_run_button != null:
+		_generation_run_button.disabled = false
 	if success:
 		_generation_output.text = "图片已保存到：" + local_path
 		_generation_status.text = "图片生成并缓存完成。"
-		if _registry != null and not _generation_name.text.strip_edges().is_empty() and _registry.has_method("upsert_generated_content"):
-			var content_kind := _selected_generation_content_kind()
-			_registry.call("upsert_generated_content", content_kind, _generation_name.text.strip_edges(), {"prompt": _generation_prompt.text.strip_edges(), "source": "sensenova_image"}, local_path, [])
+		if _registry != null and not _pending_generation_name.is_empty() and _registry.has_method("upsert_generated_content"):
+			_registry.call("upsert_generated_content", _pending_generation_kind, _pending_generation_name, {"prompt": _pending_generation_prompt, "source": "sensenova_image"}, local_path, [])
 			_refresh_all()
-			_select_by_key(content_kind, _generation_name.text.strip_edges())
+			_select_by_key(_pending_generation_kind, _pending_generation_name)
 
 
 func _selected_generation_content_kind() -> String:
@@ -377,6 +387,8 @@ func _selected_generation_content_kind() -> String:
 
 
 func _on_api_request_failed(kind: String, message: String) -> void:
+	if _generation_run_button != null:
+		_generation_run_button.disabled = false
 	_generation_status.text = "%s 请求失败：%s" % [kind, message]
 	_generation_output.text = message
 
