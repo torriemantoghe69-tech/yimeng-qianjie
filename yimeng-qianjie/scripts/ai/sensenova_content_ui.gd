@@ -87,10 +87,10 @@ func _build_ui() -> void:
 	_panel.anchor_top = 0.5
 	_panel.anchor_right = 0.5
 	_panel.anchor_bottom = 0.5
-	_panel.offset_left = -430
-	_panel.offset_top = -280
-	_panel.offset_right = 430
-	_panel.offset_bottom = 280
+	_panel.offset_left = -510
+	_panel.offset_top = -420
+	_panel.offset_right = 510
+	_panel.offset_bottom = 420
 	root.add_child(_panel)
 
 	var panel_margin := MarginContainer.new()
