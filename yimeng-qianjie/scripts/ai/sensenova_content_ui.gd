@@ -422,6 +422,12 @@ func _start_batch_illustrations() -> void:
 		var state_value: Variant = scene.get("state")
 		if state_value is GameState:
 			var state: GameState = state_value
+			for pill_value: Variant in state.pills.keys():
+				var pill_name := str(pill_value)
+				_queue_batch_image("item_icon", pill_name, "中国古典修仙游戏丹药图标，单枚丹药居中，精致玉质或药丸质感，微弱灵气环绕，纯净背景，无文字无水印。丹药名称：" + pill_name)
+			for material_value: Variant in state.materials.keys():
+				var material_name := str(material_value)
+				_queue_batch_image("item_icon", material_name, "中国古典修仙游戏炼丹炼器材料图标，单件材料完整展示，突出天然纹理与灵气，纯净背景，无文字无水印。材料名称：" + material_name)
 			for npc_value: Variant in state.met_npcs:
 				if npc_value is Dictionary:
 					var npc: Dictionary = npc_value
