@@ -47,6 +47,9 @@ var _generation_run_button: Button
 var _pending_generation_name: String = ""
 var _pending_generation_kind: String = ""
 var _pending_generation_prompt: String = ""
+var _batch_image_queue: Array[Dictionary] = []
+var _batch_image_total: int = 0
+var _batch_image_done: int = 0
 
 func _ready() -> void:
 	_api = get_node_or_null("/root/SenseNovaAPI")
@@ -273,7 +276,7 @@ func _build_api_section() -> Control:
 	_api_key_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(_api_key_edit)
 	_base_url_edit = LineEdit.new()
-	_base_url_edit.text = "https://api.sensenova.cn"
+	_base_url_edit.text = "https://token.sensenova.cn/v1"
 	_base_url_edit.custom_minimum_size = Vector2(205, 30)
 	row.add_child(_base_url_edit)
 	var save_button := Button.new()
@@ -311,6 +314,10 @@ func _build_api_section() -> Control:
 	_generation_run_button.text = "开始生成"
 	_generation_run_button.pressed.connect(_run_generation)
 	actions.add_child(_generation_run_button)
+	var batch_button := Button.new()
+	batch_button.text = "批量生成游戏配图"
+	batch_button.pressed.connect(_start_batch_illustrations)
+	actions.add_child(batch_button)
 	_generation_status = Label.new()
 	_generation_status.text = "等待配置"
 	_generation_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -377,15 +384,18 @@ func _on_api_chat_finished(success: bool, content: String, _raw: Dictionary) -> 
 
 
 func _on_api_image_saved(success: bool, local_path: String, _raw: Dictionary) -> void:
-	if _generation_run_button != null:
-		_generation_run_button.disabled = false
 	if success:
+		_batch_image_done += 1
 		_generation_output.text = "图片已保存到：" + local_path
 		_generation_status.text = "图片生成并缓存完成。"
 		if _registry != null and not _pending_generation_name.is_empty() and _registry.has_method("upsert_generated_content"):
 			_registry.call("upsert_generated_content", _pending_generation_kind, _pending_generation_name, {"prompt": _pending_generation_prompt, "source": "sensenova_image"}, local_path, [])
 			_refresh_all()
 			_select_by_key(_pending_generation_kind, _pending_generation_name)
+	if _batch_image_total > 0:
+		call_deferred("_process_next_batch_image")
+	elif _generation_run_button != null:
+		_generation_run_button.disabled = false
 
 
 func _selected_generation_content_kind() -> String:
@@ -399,6 +409,8 @@ func _on_api_request_failed(kind: String, message: String) -> void:
 		_generation_run_button.disabled = false
 	_generation_status.text = "%s 请求失败：%s" % [kind, message]
 	_generation_output.text = message
+	if _batch_image_total > 0:
+		call_deferred("_process_next_batch_image")
 
 func _build_manual_section() -> Control:
 	var panel := PanelContainer.new()
