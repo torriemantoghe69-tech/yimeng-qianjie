@@ -10,9 +10,9 @@ const FALLBACK_CONFIG_PATH := "res://sensenova_config.example.json"
 const CACHE_DIR := "user://ai_cache"
 
 var api_key: String = ""
-var base_url: String = "https://api.sensenova.cn"
-var chat_path: String = "/v1/chat/completions"
-var image_path: String = "/v1/images/generations"
+var base_url: String = "https://token.sensenova.cn/v1"
+var chat_path: String = "/chat/completions"
+var image_path: String = "/images/generations"
 var chat_model: String = ""
 var image_model: String = ""
 var timeout_sec: int = 60
@@ -99,6 +99,9 @@ func request_image(prompt: String, size: String = "1024x1024") -> void:
 		"prompt": prompt,
 		"size": size,
 		"n": 1,
+		"response_format": "b64_json",
+		"watermark": false,
+		"prompt_extend": true,
 	}
 	if image_model.strip_edges() != "":
 		payload["model"] = image_model
@@ -210,6 +213,8 @@ func _on_download_completed(result: int, response_code: int, headers: PackedStri
 func _apply_config(data: Dictionary) -> void:
 	api_key = str(data.get("api_key", api_key))
 	base_url = str(data.get("base_url", base_url))
+	if base_url == "https://api.sensenova.cn" or base_url == "https://token.sensenova.cn":
+		base_url = "https://token.sensenova.cn/v1"
 	chat_path = str(data.get("chat_path", chat_path))
 	image_path = str(data.get("image_path", image_path))
 	chat_model = str(data.get("chat_model", chat_model))
