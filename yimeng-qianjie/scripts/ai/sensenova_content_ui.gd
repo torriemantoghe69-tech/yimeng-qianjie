@@ -55,6 +55,24 @@ var _batch_image_done: int = 0
 var _batch_image_failed: int = 0
 var _batch_image_last_error: String = ""
 
+const KIND_LABELS: Dictionary = {
+	"全部": "全部类目",
+	"npc": "NPC 人物资料",
+	"portrait": "人物立绘",
+	"item": "物品资料",
+	"item_icon": "物品图标",
+	"skill": "功法 / 技能资料",
+	"skill_icon": "技能图标",
+	"skill_art": "技能招式插画",
+	"background": "游戏背景",
+	"encounter": "奇遇事件",
+	"local_image": "本地未分类图片",
+}
+
+func _kind_label(kind: String) -> String:
+	return str(KIND_LABELS.get(kind, kind))
+
+
 func _ready() -> void:
 	_api = get_node_or_null("/root/SenseNovaAPI")
 	if _api != null:
@@ -161,7 +179,7 @@ func _build_toolbar() -> Control:
 	_kind_filter = OptionButton.new()
 	_kind_filter.custom_minimum_size = Vector2(120, 32)
 	for idx: int in range(KIND_OPTIONS.size()):
-		_kind_filter.add_item(KIND_OPTIONS[idx], idx)
+		_kind_filter.add_item(_kind_label(KIND_OPTIONS[idx]), idx)
 	_kind_filter.select(0)
 	_kind_filter.item_selected.connect(_on_filter_changed)
 	row.add_child(_kind_filter)
@@ -290,26 +308,28 @@ func _build_api_section() -> Control:
 	var models := HBoxContainer.new()
 	main.add_child(models)
 	_chat_model_edit = LineEdit.new()
-	_chat_model_edit.placeholder_text = "文本模型名（按控制台填写）"
+	_chat_model_edit.placeholder_text = "文本模型名称（聊天模型）"
 	_chat_model_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	models.add_child(_chat_model_edit)
 	_image_model_edit = LineEdit.new()
-	_image_model_edit.placeholder_text = "图片模型名（按控制台填写）"
+	_image_model_edit.placeholder_text = "图片模型名称（如 sensenova-u1.5-lite）"
 	_image_model_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	models.add_child(_image_model_edit)
 	_generation_kind = OptionButton.new()
-	_generation_kind.add_item("文本生成")
-	_generation_kind.add_item("图片生成")
+	_generation_kind.add_item("生成文字内容")
+	_generation_kind.add_item("生成游戏图片")
 	main.add_child(_generation_kind)
 	_generation_content_kind = OptionButton.new()
+	_generation_content_kind.tooltip_text = "选择图片在游戏中的用途；物品图标和招式插画会按名称关联游戏内容。"
 	for content_kind: String in ["npc", "item", "skill", "encounter", "portrait", "item_icon", "skill_icon", "skill_art", "background"]:
-		_generation_content_kind.add_item(content_kind)
+		_generation_content_kind.add_item(_kind_label(content_kind))
+		_generation_content_kind.set_item_metadata(_generation_content_kind.item_count - 1, content_kind)
 	main.add_child(_generation_content_kind)
 	_generation_name = LineEdit.new()
-	_generation_name.placeholder_text = "保存名称（例如：青霜剑）"
+	_generation_name.placeholder_text = "游戏内名称（必须与物品 / 技能名称一致，才能自动显示）"
 	main.add_child(_generation_name)
 	_generation_prompt = TextEdit.new()
-	_generation_prompt.placeholder_text = "输入生成要求：文本、立绘、场景或图标描述"
+	_generation_prompt.placeholder_text = "用中文描述要生成的内容；例如：青霜剑，古风修仙飞剑图标，单件居中，无文字"
 	_generation_prompt.custom_minimum_size = Vector2(0, 54)
 	main.add_child(_generation_prompt)
 	var actions := HBoxContainer.new()
@@ -391,7 +411,7 @@ func _on_api_image_saved(success: bool, local_path: String, _raw: Dictionary) ->
 	if success:
 		_batch_image_done += 1
 		_generation_output.text = "图片已保存到：" + local_path
-		_generation_status.text = "图片生成并缓存完成。"
+		_generation_status.text = "图片已保存并登记；名称匹配现有物品 / 技能时，会在对应游戏界面显示。"
 		if _registry != null and not _pending_generation_name.is_empty() and _registry.has_method("upsert_generated_content"):
 			_registry.call("upsert_generated_content", _pending_generation_kind, _pending_generation_name, {"prompt": _pending_generation_prompt, "source": "sensenova_image"}, local_path, [])
 			_refresh_all()
@@ -483,9 +503,9 @@ func _process_next_batch_image() -> void:
 
 
 func _selected_generation_content_kind() -> String:
-	if _generation_content_kind == null:
+	if _generation_content_kind == null or _generation_content_kind.selected < 0:
 		return "ai_generated"
-	return _generation_content_kind.get_item_text(_generation_content_kind.selected)
+	return str(_generation_content_kind.get_item_metadata(_generation_content_kind.selected))
 
 
 func _on_api_request_failed(kind: String, message: String) -> void:
@@ -528,7 +548,7 @@ func _build_manual_section() -> Control:
 	_manual_kind = OptionButton.new()
 	_manual_kind.custom_minimum_size = Vector2(120, 30)
 	for idx: int in range(1, KIND_OPTIONS.size()):
-		_manual_kind.add_item(KIND_OPTIONS[idx], idx)
+		_manual_kind.add_item(_kind_label(KIND_OPTIONS[idx]), idx)
 	_manual_kind.select(0)
 	top_row.add_child(_manual_kind)
 
@@ -771,7 +791,7 @@ func _record_display_text(record: Dictionary) -> String:
 	var kind := String(record.get("kind", ""))
 	var key := String(record.get("key", ""))
 	var stamp := _time_text(int(record.get("updated_at", 0)))
-	return "%s · %s · %s" % [kind, key, stamp]
+	return "%s · %s · %s" % [_kind_label(kind), key, stamp]
 
 
 func _time_text(unix_time: int) -> String:
