@@ -159,6 +159,30 @@ func clear_all(delete_files: bool = true) -> int:
 	return total
 
 
+func restore_backup(backup_path: String) -> bool:
+	if not backup_path.begins_with(BACKUP_DIR + "/"):
+		return false
+	var backup := _read_json(backup_path)
+	if backup.is_empty():
+		return false
+	var kind := str(backup.get("kind", ""))
+	var key := str(backup.get("key", ""))
+	var record_value: Variant = backup.get("record", {})
+	if kind == "" or key == "" or not (record_value is Dictionary):
+		return false
+	var record: Dictionary = record_value
+	var data_value: Variant = record.get("data", {})
+	if not (data_value is Dictionary):
+		return false
+	var extras: Array[String] = []
+	var extras_value: Variant = record.get("extra_paths", [])
+	if extras_value is Array:
+		for path_value in extras_value:
+			extras.append(str(path_value))
+	set_record(kind, key, data_value, str(record.get("local_path", "")), extras)
+	return true
+
+
 func upsert_generated_content(kind: String, key: String, data: Dictionary, local_path: String = "", extra_paths: Array[String] = []) -> void:
 	set_record(kind, key, data, local_path, extra_paths)
 
