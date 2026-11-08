@@ -229,7 +229,7 @@ func _apply_config(data: Dictionary) -> void:
 	image_model = str(data.get("image_model", image_model))
 	if chat_model.strip_edges().is_empty():
 		chat_model = "sensenova-6.8-flash-lite"
-	if image_model.strip_edges().is_empty() or image_model.strip_edges() == "sensenova-6.8-flash-lite":
+	if image_model.strip_edges().is_empty() or image_model.strip_edges() == "sensenova-6.8-flash-lite" or image_model.strip_edges().begins_with("/"):
 		image_model = "sensenova-u1.5-lite"
 	timeout_sec = int(data.get("timeout_sec", timeout_sec))
 	if timeout_sec < 30:
@@ -349,6 +349,9 @@ func _join_url(left: String, right: String) -> String:
 	var route := right.strip_edges()
 	if not route.begins_with("/"):
 		route = "/" + route
+	# 兼容配置中填写完整的 /v1/... 路径，避免 base URL 已含 /v1 时重复拼接。
+	if base.ends_with("/v1") and route.begins_with("/v1/"):
+		route = route.substr(3)
 	return base + route
 
 
