@@ -78,6 +78,86 @@ func clear_content(kind: String = "", delete_files: bool = true) -> int:
 	return 0
 
 
+func apply_content_to_current_game(kind: String, key: String) -> Dictionary:
+	if _registry == null:
+		return {"ok": false, "message": "内容索引尚未连接。"}
+	var record_value: Variant = _registry.call("get_record", kind, key)
+	if not (record_value is Dictionary) or (record_value as Dictionary).is_empty():
+		return {"ok": false, "message": "找不到选中的内容。"}
+	var record: Dictionary = record_value
+	var data_value: Variant = record.get("data", {})
+	var data: Dictionary = data_value if data_value is Dictionary else {}
+	var content_text := str(data.get("text", data.get("content", ""))).strip_edges()
+	var structured: Dictionary = _parse_generated_json(content_text)
+	if not structured.is_empty():
+		data.merge(structured, true)
+	var scene: Node = get_tree().current_scene
+	if scene == null:
+		return {"ok": false, "message": "当前没有运行中的游戏场景。"}
+	var state_value: Variant = scene.get("state")
+	if not (state_value is GameState):
+		return {"ok": false, "message": "当前没有正在进行的一世存档，请先进入游戏。"}
+	var state: GameState = state_value
+	match kind:
+		"npc":
+			var npc_name := str(data.get("name", key)).strip_edges()
+			if npc_name.is_empty():
+				npc_name = key
+			var npc_profile: Dictionary = data.duplicate(true)
+			npc_profile["name"] = npc_name
+			npc_profile["source"] = "sensenova"
+			var found := false
+			for index: int in range(state.met_npcs.size()):
+				if str(state.met_npcs[index].get("name", "")) == npc_name:
+					state.met_npcs[index].merge(npc_profile, true)
+					found = true
+					break
+			if not found:
+				state.met_npcs.append(npc_profile)
+		"item":
+			if not state.treasures.has(key):
+				state.treasures.append(key)
+			var items_value: Variant = state.flags.get("ai_generated_items", {})
+			var items: Dictionary = items_value if items_value is Dictionary else {}
+			items[key] = data.duplicate(true)
+			state.flags["ai_generated_items"] = items
+		"skill":
+			if not state.learned_skills.has(key):
+				state.learned_skills.append(key)
+			var skills_value: Variant = state.flags.get("ai_generated_skills", {})
+			var skills: Dictionary = skills_value if skills_value is Dictionary else {}
+			skills[key] = data.duplicate(true)
+			state.flags["ai_generated_skills"] = skills
+		"encounter":
+			var event_text := content_text if content_text != "" else str(data.get("description", key))
+			state.add_log("【AI 奇遇·%s】%s" % [key, event_text], "story")
+		"portrait":
+			var portraits_value: Variant = state.flags.get("ai_portraits", {})
+			var portraits: Dictionary = portraits_value if portraits_value is Dictionary else {}
+			portraits[key] = str(record.get("local_path", ""))
+			state.flags["ai_portraits"] = portraits
+		"background":
+			state.flags["ai_current_background"] = str(record.get("local_path", ""))
+		_:
+			return {"ok": false, "message": "该类内容暂不支持直接应用到当前存档。"}
+	if scene.has_method("_save_run"):
+		scene.call("_save_run")
+	if scene.has_method("_refresh_game_ui"):
+		scene.call("_refresh_game_ui")
+	return {"ok": true, "message": "已应用 %s「%s」，并保存当前存档。" % [kind, key]}
+
+
+func _parse_generated_json(content: String) -> Dictionary:
+	if content.is_empty():
+		return {}
+	var candidate := content.strip_edges()
+	if candidate.begins_with("```"):
+		candidate = candidate.replace("```json", "").replace("```", "").strip_edges()
+	var parsed: Variant = JSON.parse_string(candidate)
+	if parsed is Dictionary:
+		return parsed
+	return {}
+
 func request_npc(name: String, realm: String = "", personality: String = "", background: String = "", sex: String = "") -> void:
 	if not is_ready():
 		generation_failed.emit("npc", "SenseNova is not configured.")
