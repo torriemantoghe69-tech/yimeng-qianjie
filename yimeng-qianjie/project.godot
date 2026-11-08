@@ -23,6 +23,7 @@ config/icon="res://icon.svg"
 SenseNovaAPI="*res://scripts/ai/sensenova_api.gd"
 SenseNovaContentManager="*res://scripts/ai/sensenova_content_manager.gd"
 SenseNovaContentRegistry="*res://scripts/ai/sensenova_content_registry.gd"
+SenseNovaContentUI="*res://scripts/ai/sensenova_content_ui.gd"
 
 [display]
 
