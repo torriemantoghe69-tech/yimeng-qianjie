@@ -39,3 +39,7 @@ window/stretch/aspect="expand"
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 environment/defaults/default_clear_color=Color(0.91, 0.87, 0.79, 1)
+
+[debug]
+
+gdscript/warnings/inference_on_variant=0
