@@ -463,6 +463,10 @@ func _build_menu() -> void:
 	var kicker_label := _label("一 梦 千 劫　·　文 字 修 仙", 14, GOLD)
 	kicker_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	kicker.add_child(kicker_label)
+	var ai_button := _make_text_button("商汤 AI", 12)
+	ai_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	ai_button.pressed.connect(_open_sensenova_panel)
+	kicker.add_child(ai_button)
 
 	var title := _label("一 梦 千 劫", 92, INK, font_title)
 	title.add_theme_color_override("font_shadow_color", Color(0.30, 0.24, 0.16, 0.14))
@@ -1907,6 +1911,13 @@ func _scroll_log_bottom() -> void:
 # ---------------------------------------------------------------------------
 # 游戏流程
 # ---------------------------------------------------------------------------
+
+func _open_sensenova_panel() -> void:
+	var ai_ui: Node = get_node_or_null("/root/SenseNovaContentUI")
+	if ai_ui != null and ai_ui.has_method("open_panel"):
+		ai_ui.call("open_panel")
+	else:
+		push_warning("SenseNovaContentUI 自动加载尚未就绪。")
 
 func _show_menu() -> void:
 	_clear_modal(false)
