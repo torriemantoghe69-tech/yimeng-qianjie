@@ -13,8 +13,8 @@ var api_key: String = ""
 var base_url: String = "https://token.sensenova.cn/v1"
 var chat_path: String = "/chat/completions"
 var image_path: String = "/images/generations"
-var chat_model: String = ""
-var image_model: String = ""
+var chat_model: String = "sensenova-6.8-flash-lite"
+var image_model: String = "sensenova-u1.5-lite"
 var timeout_sec: int = 60
 
 
@@ -219,6 +219,10 @@ func _apply_config(data: Dictionary) -> void:
 	image_path = str(data.get("image_path", image_path))
 	chat_model = str(data.get("chat_model", chat_model))
 	image_model = str(data.get("image_model", image_model))
+	if chat_model.strip_edges().is_empty():
+		chat_model = "sensenova-6.8-flash-lite"
+	if image_model.strip_edges().is_empty():
+		image_model = "sensenova-u1.5-lite"
 	timeout_sec = int(data.get("timeout_sec", timeout_sec))
 	if timeout_sec <= 0:
 		timeout_sec = 60
