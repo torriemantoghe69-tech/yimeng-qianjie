@@ -1,5 +1,4 @@
 extends Node
-class_name SenseNovaContentManager
 
 ## 高层封装：把《一梦千劫》的业务数据转成商汤请求，减少各系统重复写提示词。
 
