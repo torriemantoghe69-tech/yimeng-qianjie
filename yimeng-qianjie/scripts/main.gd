@@ -3350,6 +3350,16 @@ func _add_inventory_row(parent: VBoxContainer, item_name: String, category: Stri
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
 	parent.add_child(row)
+	var item_texture := _ai_content_texture("item_icon", item_name)
+	if item_texture == null:
+		item_texture = _ai_content_texture("item", item_name)
+	if item_texture != null:
+		var item_image := TextureRect.new()
+		item_image.custom_minimum_size = Vector2(56, 56)
+		item_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		item_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		item_image.texture = item_texture
+		row.add_child(item_image)
 	var info := VBoxContainer.new()
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	info.add_theme_constant_override("separation", 2)
