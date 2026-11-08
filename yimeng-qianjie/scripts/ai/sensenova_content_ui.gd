@@ -40,6 +40,7 @@ var _generation_prompt: TextEdit
 var _generation_output: RichTextLabel
 var _generation_status: Label
 var _generation_kind: OptionButton
+var _generation_content_kind: OptionButton
 var _generation_name: LineEdit
 
 func _ready() -> void:
@@ -281,6 +282,10 @@ func _build_api_section() -> Control:
 	_generation_kind.add_item("文本生成")
 	_generation_kind.add_item("图片生成")
 	main.add_child(_generation_kind)
+	_generation_content_kind = OptionButton.new()
+	for content_kind: String in ["npc", "item", "skill", "encounter", "portrait", "item_icon", "skill_icon", "background"]:
+		_generation_content_kind.add_item(content_kind)
+	main.add_child(_generation_content_kind)
 	_generation_name = LineEdit.new()
 	_generation_name.placeholder_text = "保存名称（例如：青霜剑）"
 	main.add_child(_generation_name)
@@ -324,8 +329,8 @@ func _save_api_settings() -> void:
 	_api.set("base_url", _base_url_edit.text.strip_edges())
 	_api.set("chat_model", _chat_model_edit.text.strip_edges())
 	_api.set("image_model", _image_model_edit.text.strip_edges())
-	_api.call("save_config")
-	_generation_status.text = "配置已保存到本机 user://。"
+	var saved: bool = bool(_api.call("save_config"))
+	_generation_status.text = "配置已保存到本机 user://。" if saved else "配置保存失败，请检查文件权限。"
 
 
 func _run_generation() -> void:
@@ -348,8 +353,10 @@ func _on_api_chat_finished(success: bool, content: String, _raw: Dictionary) -> 
 	_generation_output.text = content
 	_generation_status.text = "文本生成完成。" if success else "文本生成失败。"
 	if success and _registry != null and not _generation_name.text.strip_edges().is_empty() and _registry.has_method("upsert_generated_content"):
-		_registry.call("upsert_generated_content", "ai_text", _generation_name.text.strip_edges(), {"text": content, "source": "sensenova_chat"}, "", [])
+		var content_kind := _selected_generation_content_kind()
+		_registry.call("upsert_generated_content", content_kind, _generation_name.text.strip_edges(), {"text": content, "source": "sensenova_chat", "prompt": _generation_prompt.text.strip_edges()}, "", [])
 		_refresh_all()
+		_select_by_key(content_kind, _generation_name.text.strip_edges())
 
 
 func _on_api_image_saved(success: bool, local_path: String, _raw: Dictionary) -> void:
@@ -357,8 +364,16 @@ func _on_api_image_saved(success: bool, local_path: String, _raw: Dictionary) ->
 		_generation_output.text = "图片已保存到：" + local_path
 		_generation_status.text = "图片生成并缓存完成。"
 		if _registry != null and not _generation_name.text.strip_edges().is_empty() and _registry.has_method("upsert_generated_content"):
-			_registry.call("upsert_generated_content", "ai_image", _generation_name.text.strip_edges(), {"prompt": _generation_prompt.text.strip_edges()}, local_path, [])
+			var content_kind := _selected_generation_content_kind()
+			_registry.call("upsert_generated_content", content_kind, _generation_name.text.strip_edges(), {"prompt": _generation_prompt.text.strip_edges(), "source": "sensenova_image"}, local_path, [])
 			_refresh_all()
+			_select_by_key(content_kind, _generation_name.text.strip_edges())
+
+
+func _selected_generation_content_kind() -> String:
+	if _generation_content_kind == null:
+		return "ai_generated"
+	return _generation_content_kind.get_item_text(_generation_content_kind.selected)
 
 
 func _on_api_request_failed(kind: String, message: String) -> void:
