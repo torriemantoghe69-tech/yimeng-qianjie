@@ -1,5 +1,4 @@
 extends Node
-class_name SenseNovaContentRegistry
 
 ## 内容索引：用于保存、查找、删除《一梦千劫》里由商汤或人工录入的内容。
 ## 以后无论是 NPC、装备、功法还是背景图，都可以统一登记到这里。
