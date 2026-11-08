@@ -299,7 +299,7 @@ func _build_api_section() -> Control:
 	_generation_kind.add_item("图片生成")
 	main.add_child(_generation_kind)
 	_generation_content_kind = OptionButton.new()
-	for content_kind: String in ["npc", "item", "skill", "encounter", "portrait", "item_icon", "skill_icon", "background"]:
+	for content_kind: String in ["npc", "item", "skill", "encounter", "portrait", "item_icon", "skill_icon", "skill_art", "background"]:
 		_generation_content_kind.add_item(content_kind)
 	main.add_child(_generation_content_kind)
 	_generation_name = LineEdit.new()
