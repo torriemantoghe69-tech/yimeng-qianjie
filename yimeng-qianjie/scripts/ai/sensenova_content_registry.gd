@@ -209,12 +209,44 @@ func _backup_record(kind: String, key: String, record: Variant) -> void:
 		push_warning("无法创建 AI 内容备份目录。")
 		return
 	var safe_name := _safe_key(kind + "_" + key)
-	var backup_path := "%s/%s_%d.json" % [BACKUP_DIR, safe_name, Time.get_unix_time_from_system()]
+	var stamp := Time.get_unix_time_from_system()
+	var backup_record: Dictionary = (record as Dictionary).duplicate(true) if record is Dictionary else {}
+	var source_path := str(backup_record.get("local_path", ""))
+	if source_path.begins_with(AI_CACHE_PREFIX) and FileAccess.file_exists(source_path):
+		var saved_path := _copy_to_backup(source_path, safe_name, stamp)
+		if saved_path != "":
+			backup_record["local_path"] = saved_path
+	var extra_value: Variant = backup_record.get("extra_paths", [])
+	if extra_value is Array:
+		var saved_extras: Array[String] = []
+		for extra_path_value in extra_value:
+			var extra_path := str(extra_path_value)
+			if extra_path.begins_with(AI_CACHE_PREFIX) and FileAccess.file_exists(extra_path):
+				var saved_extra := _copy_to_backup(extra_path, safe_name, stamp)
+				saved_extras.append(saved_extra if saved_extra != "" else extra_path)
+			else:
+				saved_extras.append(extra_path)
+		backup_record["extra_paths"] = saved_extras
+	var backup_path := "%s/%s_%d.json" % [BACKUP_DIR, safe_name, stamp]
 	var file := FileAccess.open(backup_path, FileAccess.WRITE)
 	if file == null:
 		push_warning("无法写入 AI 内容备份：%s" % backup_path)
 		return
-	file.store_string(JSON.stringify({"kind": kind, "key": key, "record": record}, "\t"))
+	file.store_string(JSON.stringify({"kind": kind, "key": key, "record": backup_record}, "\t"))
+
+
+func _copy_to_backup(source_path: String, safe_name: String, stamp: int) -> String:
+	var source_file := FileAccess.open(source_path, FileAccess.READ)
+	if source_file == null:
+		return ""
+	var extension := source_path.get_extension()
+	var file_name := "%s_%d.%s" % [safe_name, stamp, extension if extension != "" else "bin"]
+	var destination := "%s/%s" % [BACKUP_DIR, file_name]
+	var destination_file := FileAccess.open(destination, FileAccess.WRITE)
+	if destination_file == null:
+		return ""
+	destination_file.store_buffer(source_file.get_buffer(source_file.get_length()))
+	return destination
 
 
 func _ensure_parent_dir(path: String) -> void:
