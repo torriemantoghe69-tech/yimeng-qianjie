@@ -52,6 +52,12 @@ func remove_content(kind: String, key: String, delete_files: bool = true) -> boo
 	return false
 
 
+func restore_content_backup(backup_path: String) -> bool:
+	if _registry != null and _registry.has_method("restore_backup"):
+		return bool(_registry.call("restore_backup", backup_path))
+	return false
+
+
 func list_content(kind: String = "") -> Array[Dictionary]:
 	if _registry != null and _registry.has_method("list_records"):
 		var value: Variant = _registry.call("list_records", kind)
