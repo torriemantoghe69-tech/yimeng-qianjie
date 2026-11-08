@@ -1542,6 +1542,16 @@ func _open_treasure_detail(item_name: String, notice: String = "") -> void:
 	seal.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	head.add_child(seal)
 	box.add_child(_hairline())
+	var treasure_texture := _ai_content_texture("item_icon", item_name)
+	if treasure_texture == null:
+		treasure_texture = _ai_content_texture("item", item_name)
+	if treasure_texture != null:
+		var treasure_image := TextureRect.new()
+		treasure_image.custom_minimum_size = Vector2(0, 190)
+		treasure_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		treasure_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		treasure_image.texture = treasure_texture
+		box.add_child(treasure_image)
 	if not notice.is_empty():
 		var notice_label := _label(notice, 11, JADE)
 		notice_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
