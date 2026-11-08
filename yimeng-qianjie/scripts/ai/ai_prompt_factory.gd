@@ -22,6 +22,26 @@ static func npc_profile_prompt(name: String, realm: String = "", personality: St
 	return "\n".join(lines)
 
 
+static func portrait_prompt(name: String, realm: String = "", personality: String = "", appearance: String = "", sex: String = "", posture: String = "站立半身像") -> String:
+	var lines: Array[String] = []
+	lines.append("你是一名中国古风仙侠角色立绘提示词编写者。")
+	lines.append("请生成一段适合图像生成模型的角色立绘提示词，用于《一梦千劫》。")
+	lines.append("只输出一段可直接喂给图像模型的中文提示词，不要解释，不要分点，不要加标题。")
+	lines.append("角色名：%s" % name)
+	if sex.strip_edges() != "":
+		lines.append("性别：%s" % sex)
+	if realm.strip_edges() != "":
+		lines.append("境界：%s" % realm)
+	if personality.strip_edges() != "":
+		lines.append("气质：%s" % personality)
+	if appearance.strip_edges() != "":
+		lines.append("外貌：%s" % appearance)
+	lines.append("姿态：%s" % posture)
+	lines.append("要求：古风、仙侠、水墨、国风插画、衣袂飘动、层次分明、干净背景、角色居中、适合做游戏人物立绘。")
+	lines.append("不要文字、不要水印、不要现代服饰、不要多人同框、不要遮挡脸部和主要服装细节。")
+	return "\n".join(lines)
+
+
 static func item_profile_prompt(item_name: String, item_type: String = "装备", grade: String = "", effect_hint: String = "") -> String:
 	var lines: Array[String] = []
 	lines.append("你是一名中文修仙游戏道具设定编剧。")
@@ -38,6 +58,21 @@ static func item_profile_prompt(item_name: String, item_type: String = "装备",
 	return "\n".join(lines)
 
 
+static func item_icon_prompt(item_name: String, item_type: String = "装备", grade: String = "", style_hint: String = "") -> String:
+	var lines: Array[String] = []
+	lines.append("你是一名中国古风仙侠物品图标提示词编写者。")
+	lines.append("请生成一段适合图像生成模型的道具图标提示词，用于《一梦千劫》。")
+	lines.append("只输出一段可直接喂给图像模型的中文提示词，不要解释，不要分点，不要加标题。")
+	lines.append("名称：%s" % item_name)
+	lines.append("类型：%s" % item_type)
+	if grade.strip_edges() != "":
+		lines.append("品阶：%s" % grade)
+	if style_hint.strip_edges() != "":
+		lines.append("风格提示：%s" % style_hint)
+	lines.append("要求：单个主体、居中构图、背景干净或透明感、细节清晰、适合游戏背包图标、国风水墨、不要文字水印。")
+	return "\n".join(lines)
+
+
 static func skill_profile_prompt(skill_name: String, skill_type: String = "功法", realm: String = "", effect_hint: String = "") -> String:
 	var lines: Array[String] = []
 	lines.append("你是一名中文修仙游戏技能设定编剧。")
@@ -51,6 +86,21 @@ static func skill_profile_prompt(skill_name: String, skill_type: String = "功�
 	if effect_hint.strip_edges() != "":
 		lines.append("效果提示：%s" % effect_hint)
 	lines.append("要求：尽量给出可实现的数值或机制关键词，例如加伤、护盾、控制、暴击、破防、召唤、持续伤害。")
+	return "\n".join(lines)
+
+
+static func skill_icon_prompt(skill_name: String, skill_type: String = "功法", element: String = "", style_hint: String = "") -> String:
+	var lines: Array[String] = []
+	lines.append("你是一名中国古风仙侠技能图标提示词编写者。")
+	lines.append("请生成一段适合图像生成模型的技能图标提示词，用于《一梦千劫》。")
+	lines.append("只输出一段可直接喂给图像模型的中文提示词，不要解释，不要分点，不要加标题。")
+	lines.append("名称：%s" % skill_name)
+	lines.append("类型：%s" % skill_type)
+	if element.strip_edges() != "":
+		lines.append("属性：%s" % element)
+	if style_hint.strip_edges() != "":
+		lines.append("风格提示：%s" % style_hint)
+	lines.append("要求：单个符印或卷轴主体、图标感强、构图简洁、背景干净、适合技能按钮、国风水墨、不要文字水印。")
 	return "\n".join(lines)
 
 
