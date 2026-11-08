@@ -1,0 +1,9 @@
+{
+	"api_key": "",
+	"base_url": "https://api.sensenova.cn",
+	"chat_path": "/v1/chat/completions",
+	"image_path": "/v1/images/generations",
+	"chat_model": "",
+	"image_model": "",
+	"timeout_sec": 60
+}
