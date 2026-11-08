@@ -7,11 +7,15 @@ signal npc_generated(success: bool, content: String)
 signal item_generated(success: bool, content: String)
 signal skill_generated(success: bool, content: String)
 signal background_generated(success: bool, local_path: String)
+signal portrait_generated(success: bool, local_path: String)
+signal item_icon_generated(success: bool, local_path: String)
+signal skill_icon_generated(success: bool, local_path: String)
 signal encounter_generated(success: bool, content: String)
 signal image_generated(success: bool, local_path: String)
 signal generation_failed(kind: String, message: String)
 
 var _api: Node = null
+var _pending_image_kind: String = ""
 
 
 func _ready() -> void:
@@ -36,11 +40,27 @@ func request_npc(name: String, realm: String = "", personality: String = "", bac
 	_api.call("request_chat", AIPromptFactory.npc_profile_prompt(name, realm, personality, background, sex))
 
 
+func request_portrait(name: String, realm: String = "", personality: String = "", appearance: String = "", sex: String = "", posture: String = "站立半身像") -> void:
+	if not is_ready():
+		generation_failed.emit("portrait", "SenseNova is not configured.")
+		return
+	_pending_image_kind = "portrait"
+	_api.call("request_image", AIPromptFactory.portrait_prompt(name, realm, personality, appearance, sex, posture))
+
+
 func request_item(item_name: String, item_type: String = "装备", grade: String = "", effect_hint: String = "") -> void:
 	if not is_ready():
 		generation_failed.emit("item", "SenseNova is not configured.")
 		return
 	_api.call("request_chat", AIPromptFactory.item_profile_prompt(item_name, item_type, grade, effect_hint))
+
+
+func request_item_icon(item_name: String, item_type: String = "装备", grade: String = "", style_hint: String = "") -> void:
+	if not is_ready():
+		generation_failed.emit("item_icon", "SenseNova is not configured.")
+		return
+	_pending_image_kind = "item_icon"
+	_api.call("request_image", AIPromptFactory.item_icon_prompt(item_name, item_type, grade, style_hint))
 
 
 func request_skill(skill_name: String, skill_type: String = "功法", realm: String = "", effect_hint: String = "") -> void:
@@ -50,10 +70,19 @@ func request_skill(skill_name: String, skill_type: String = "功法", realm: Str
 	_api.call("request_chat", AIPromptFactory.skill_profile_prompt(skill_name, skill_type, realm, effect_hint))
 
 
+func request_skill_icon(skill_name: String, skill_type: String = "功法", element: String = "", style_hint: String = "") -> void:
+	if not is_ready():
+		generation_failed.emit("skill_icon", "SenseNova is not configured.")
+		return
+	_pending_image_kind = "skill_icon"
+	_api.call("request_image", AIPromptFactory.skill_icon_prompt(skill_name, skill_type, element, style_hint))
+
+
 func request_background(location_name: String, atmosphere: String = "", scene_type: String = "") -> void:
 	if not is_ready():
 		generation_failed.emit("background", "SenseNova is not configured.")
 		return
+	_pending_image_kind = "background"
 	_api.call("request_image", AIPromptFactory.background_prompt(location_name, atmosphere, scene_type))
 
 
@@ -80,10 +109,23 @@ func _on_chat_finished(success: bool, content: String, raw: Dictionary) -> void:
 
 
 func _on_image_saved(success: bool, local_path: String, raw: Dictionary) -> void:
-	if success:
-		image_generated.emit(true, local_path)
-		background_generated.emit(true, local_path)
+	if not success:
+		return
+	image_generated.emit(true, local_path)
+	match _pending_image_kind:
+		"portrait":
+			portrait_generated.emit(true, local_path)
+		"item_icon":
+			item_icon_generated.emit(true, local_path)
+		"skill_icon":
+			skill_icon_generated.emit(true, local_path)
+		"background":
+			background_generated.emit(true, local_path)
+		_:
+			pass
+	_pending_image_kind = ""
 
 
 func _on_request_failed(kind: String, message: String) -> void:
+	_pending_image_kind = ""
 	generation_failed.emit(kind, message)
