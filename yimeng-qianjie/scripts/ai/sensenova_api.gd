@@ -1,5 +1,4 @@
 extends Node
-class_name SenseNovaAPI
 
 signal chat_finished(success: bool, content: String, raw: Dictionary)
 signal image_finished(success: bool, image_url: String, raw: Dictionary)
