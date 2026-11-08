@@ -1360,6 +1360,23 @@ func _fill_talent_tags() -> void:
 		tag.tooltip_text = String(talent.get("desc", ""))
 		talent_flow.add_child(tag)
 
+func _ai_content_texture(kind: String, key: String) -> Texture2D:
+	var registry: Node = get_node_or_null("/root/SenseNovaContentRegistry")
+	if registry == null or not registry.has_method("get_record"):
+		return null
+	var record_value: Variant = registry.call("get_record", kind, key)
+	if not (record_value is Dictionary):
+		return null
+	var record: Dictionary = record_value
+	var local_path := str(record.get("local_path", ""))
+	if local_path.is_empty() or not FileAccess.file_exists(local_path):
+		return null
+	var image := Image.new()
+	if image.load(local_path) != OK:
+		return null
+	return ImageTexture.create_from_image(image)
+
+
 func _fill_equipment_slots() -> void:
 	for slot: Dictionary in GameData.EQUIP_SLOTS:
 		var slot_id: String = String(slot["id"])
@@ -1369,6 +1386,8 @@ func _fill_equipment_slots() -> void:
 		var button := widget["button"] as Button
 		var name_label := widget["name"] as Label
 		var item_name: String = state.equipped_item(slot_id)
+		button.icon = null
+		button.expand_icon = false
 		if item_name.is_empty():
 			name_label.text = "未佩带"
 			name_label.add_theme_color_override("font_color", MUTED)
@@ -1379,6 +1398,12 @@ func _fill_equipment_slots() -> void:
 			var rarity_color: Color = _treasure_rarity_color(String(info.get("rarity", "凡品")))
 			name_label.text = item_name
 			name_label.add_theme_color_override("font_color", rarity_color)
+			var equipped_texture := _ai_content_texture("item_icon", item_name)
+			if equipped_texture == null:
+				equipped_texture = _ai_content_texture("item", item_name)
+			if equipped_texture != null:
+				button.icon = equipped_texture
+				button.expand_icon = true
 			button.add_theme_stylebox_override("normal", _card_style(Color(0.96, 0.925, 0.855, 0.82), Color(rarity_color.r, rarity_color.g, rarity_color.b, 0.44)))
 			button.tooltip_text = "已佩带【%s】 · 点击更换或卸下" % item_name
 
@@ -1421,6 +1446,12 @@ func _make_treasure_button(item_name: String) -> Button:
 	button.add_theme_stylebox_override("pressed", pressed)
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	button.tooltip_text = "点击查看「%s」的详情并佩带" % item_name
+	var item_texture := _ai_content_texture("item_icon", item_name)
+	if item_texture == null:
+		item_texture = _ai_content_texture("item", item_name)
+	if item_texture != null:
+		button.icon = item_texture
+		button.expand_icon = true
 	if state != null and state.is_equipped(item_name):
 		button.text = "◆ " + item_name
 	button.pressed.connect(_open_treasure_detail.bind(item_name))
