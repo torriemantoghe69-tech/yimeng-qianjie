@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="18" fill="#eee4d0"/>
+  <circle cx="82" cy="38" r="17" fill="#b24a37" opacity="0.85"/>
+  <path d="M0 102 L28 66 L47 86 L68 54 L96 90 L112 74 L128 96 L128 128 L0 128 Z" fill="#35423c" opacity="0.75"/>
+  <path d="M0 114 L24 92 L46 105 L74 80 L99 108 L128 96 L128 128 L0 128 Z" fill="#1f2b28" opacity="0.9"/>
+  <text x="18" y="42" font-family="KaiTi, serif" font-size="32" fill="#2a251f">梦</text>
+</svg>
