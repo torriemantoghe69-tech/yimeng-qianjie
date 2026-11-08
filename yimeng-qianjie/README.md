@@ -22,7 +22,7 @@ SenseNovaAPI.request_chat("生成一个元婴期妖修简介")
 SenseNovaAPI.request_image("古风修仙宗门山门，水墨氛围")
 ```
 
-更高层的封装是 `SenseNovaContentManager`，用来按业务直接请求：
+更高层的封装是 `SenseNovaContentManager`，它会把 NPC、装备、功法、场景、奇遇直接转成商汤请求，并在成功后自动登记到内容索引里：
 
 ```gdscript
 var ai := SenseNovaContentManager.new()
@@ -35,6 +35,13 @@ ai.request_skill("焚天诀", "功法", "金丹", "火系爆发与持续灼烧")
 ai.request_skill_icon("焚天诀", "功法", "火", "符箓与火纹卷轴")
 ai.request_background("黑风山", "阴风、残月、雾气", "战斗背景")
 ```
+
+内容索引单例是 `SenseNovaContentRegistry`：
+
+- 可以保存、查找、删除内容
+- 可以按类型清空
+- 删除内容时可同步删除本地图片缓存
+- 索引文件默认保存在 `user://ai_content_index.json`
 
 配置文件读取顺序：
 
@@ -64,6 +71,7 @@ tools/smoke_test.gd
 scripts/ai/sensenova_api.gd
 scripts/ai/ai_prompt_factory.gd
 scripts/ai/sensenova_content_manager.gd
+scripts/ai/sensenova_content_registry.gd
 ```
 
 ## 材料与精华
