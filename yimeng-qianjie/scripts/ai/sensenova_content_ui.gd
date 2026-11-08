@@ -1,5 +1,4 @@
 extends Node
-class_name SenseNovaContentUI
 
 ## 轻量级内容管理界面：查看、录入、删除《一梦千劫》的 AI / 手工内容。
 ## 作为自动加载节点挂在游戏里，不改主场景也能直接使用。
@@ -427,63 +426,65 @@ func _update_status() -> void:
 
 func _current_kind_filter() -> String:
 	var idx := _kind_filter.selected if _kind_filter != null else 0
-	idx = clampi(idx, 0, KIND_OPTIONS.size() - 1)
+	idx = clamp(idx, 0, KIND_OPTIONS.size() - 1)
 	return KIND_OPTIONS[idx]
 
 
 func _current_manual_kind() -> String:
-	var idx := _manual_kind.selected if _manual_kind != null else 0
-	idx = clampi(idx + 1, 1, KIND_OPTIONS.size() - 1)
+	if _manual_kind == null:
+		return ""
+	var idx := clamp(_manual_kind.selected + 1, 1, KIND_OPTIONS.size() - 1)
 	return KIND_OPTIONS[idx]
 
 
 func _get_records(kind: String) -> Array[Dictionary]:
-	if _registry == null or not _registry.has_method("list_records"):
+	if _registry == null:
 		return []
-	var value: Variant = _registry.call("list_records", "" if kind == "全部" else kind)
-	if value is Array:
-		return value
+	if _registry.has_method("list_records"):
+		var value: Variant = _registry.call("list_records", "" if kind == "全部" else kind)
+		if value is Array:
+			return value
 	return []
 
 
 func _record_display_text(record: Dictionary) -> String:
 	var kind := String(record.get("kind", ""))
 	var key := String(record.get("key", ""))
-	var data: Dictionary = record.get("data", {})
-	var summary := key
-	if data.has("name"):
-		summary = String(data.get("name", key))
-	elif data.has("text"):
-		summary = String(data.get("text", key)).left(26)
-	return "%s · %s" % [kind, summary]
+	var stamp := _time_text(int(record.get("updated_at", 0)))
+	return "%s · %s · %s" % [kind, key, stamp]
 
 
-func _json_text(data: Variant) -> String:
-	if data is Dictionary or data is Array:
-		return JSON.stringify(data, "\t")
-	return str(data)
+func _selected_record() -> Dictionary:
+	var items := _record_list.get_selected_items()
+	if items.is_empty():
+		return {}
+	var meta: Variant = _record_list.get_item_metadata(items[0])
+	if meta is Dictionary:
+		return meta
+	return {}
 
 
 func _time_text(unix_time: int) -> String:
 	if unix_time <= 0:
-		return "未知"
-	return Time.get_datetime_string_from_unix_time(unix_time, true)
+		return "未知时间"
+	var dt := Time.get_datetime_dict_from_unix_time(unix_time)
+	return "%04d-%02d-%02d %02d:%02d" % [dt.year, dt.month, dt.day, dt.hour, dt.minute]
+
+
+func _json_text(value: Variant) -> String:
+	return JSON.stringify(value, "\t")
 
 
 func _panel_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.96, 0.93, 0.86, 0.98)
-	style.border_color = Color(0.60, 0.52, 0.40, 0.32)
+	style.bg_color = Color(0.95, 0.91, 0.84, 0.97)
+	style.border_color = Color(0.55, 0.46, 0.31, 0.55)
 	style.border_width_left = 1
-	style.border_width_right = 1
 	style.border_width_top = 1
+	style.border_width_right = 1
 	style.border_width_bottom = 1
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_left = 8
-	style.corner_radius_bottom_right = 8
-	style.content_margin_left = 8
-	style.content_margin_right = 8
-	style.content_margin_top = 8
-	style.content_margin_bottom = 8
+	style.corner_radius_top_left = 10
+	style.corner_radius_top_right = 10
+	style.corner_radius_bottom_left = 10
+	style.corner_radius_bottom_right = 10
 	return style
