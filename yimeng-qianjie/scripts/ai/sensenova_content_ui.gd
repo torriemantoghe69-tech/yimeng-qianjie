@@ -274,6 +274,12 @@ func _build_manual_section() -> Control:
 	return panel
 
 
+func open_panel() -> void:
+	_build_ui()
+	_panel.visible = true
+	_refresh_all()
+
+
 func _toggle_panel() -> void:
 	_build_ui()
 	_panel.visible = not _panel.visible
