@@ -28,8 +28,11 @@ SenseNovaAPI.request_image("古风修仙宗门山门，水墨氛围")
 var ai := SenseNovaContentManager.new()
 add_child(ai)
 ai.request_npc("柳青衣", "金丹初期", "清冷", "出身寒门散修", "女")
+ai.request_portrait("柳青衣", "金丹初期", "清冷", "白发、蓝衣、冷白肤色", "女")
 ai.request_item("青霜剑", "武器", "玄阶", "寒霜与破邪")
+ai.request_item_icon("青霜剑", "武器", "玄阶", "单柄长剑，冷光剑鞘")
 ai.request_skill("焚天诀", "功法", "金丹", "火系爆发与持续灼烧")
+ai.request_skill_icon("焚天诀", "功法", "火", "符箓与火纹卷轴")
 ai.request_background("黑风山", "阴风、残月、雾气", "战斗背景")
 ```
 
