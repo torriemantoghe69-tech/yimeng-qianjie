@@ -31,8 +31,23 @@ var _manual_save: Button
 var _delete_button: Button
 var _clear_button: Button
 var _refresh_button: Button
+var _api: Node = null
+var _api_key_edit: LineEdit
+var _base_url_edit: LineEdit
+var _chat_model_edit: LineEdit
+var _image_model_edit: LineEdit
+var _generation_prompt: TextEdit
+var _generation_output: RichTextLabel
+var _generation_status: Label
+var _generation_kind: OptionButton
+var _generation_name: LineEdit
 
 func _ready() -> void:
+	_api = get_node_or_null("/root/SenseNovaAPI")
+	if _api != null:
+		_api.chat_finished.connect(_on_api_chat_finished)
+		_api.image_saved.connect(_on_api_image_saved)
+		_api.request_failed.connect(_on_api_request_failed)
 	call_deferred("_build_ui")
 
 
@@ -90,6 +105,7 @@ func _build_ui() -> void:
 	panel_margin.add_child(main)
 
 	main.add_child(_build_header())
+	main.add_child(_build_api_section())
 	main.add_child(_build_toolbar())
 	main.add_child(_build_body())
 	main.add_child(_build_manual_section())
@@ -219,6 +235,135 @@ func _build_body() -> Control:
 
 	return body
 
+
+
+func _build_api_section() -> Control:
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _panel_style())
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 10)
+	margin.add_theme_constant_override("margin_right", 10)
+	margin.add_theme_constant_override("margin_top", 7)
+	margin.add_theme_constant_override("margin_bottom", 7)
+	panel.add_child(margin)
+	var main := VBoxContainer.new()
+	main.add_theme_constant_override("separation", 5)
+	margin.add_child(main)
+	var title := Label.new()
+	title.text = "商汤 API 配置与生成"
+	main.add_child(title)
+	var row := HBoxContainer.new()
+	main.add_child(row)
+	_api_key_edit = LineEdit.new()
+	_api_key_edit.placeholder_text = "API Key（保存在本机）"
+	_api_key_edit.secret = true
+	_api_key_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(_api_key_edit)
+	_base_url_edit = LineEdit.new()
+	_base_url_edit.text = "https://api.sensenova.cn"
+	_base_url_edit.custom_minimum_size = Vector2(205, 30)
+	row.add_child(_base_url_edit)
+	var save_button := Button.new()
+	save_button.text = "保存配置"
+	save_button.pressed.connect(_save_api_settings)
+	row.add_child(save_button)
+	var models := HBoxContainer.new()
+	main.add_child(models)
+	_chat_model_edit = LineEdit.new()
+	_chat_model_edit.placeholder_text = "文本模型名（按控制台填写）"
+	_chat_model_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	models.add_child(_chat_model_edit)
+	_image_model_edit = LineEdit.new()
+	_image_model_edit.placeholder_text = "图片模型名（按控制台填写）"
+	_image_model_edit.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	models.add_child(_image_model_edit)
+	_generation_kind = OptionButton.new()
+	_generation_kind.add_item("文本生成")
+	_generation_kind.add_item("图片生成")
+	main.add_child(_generation_kind)
+	_generation_name = LineEdit.new()
+	_generation_name.placeholder_text = "保存名称（例如：青霜剑）"
+	main.add_child(_generation_name)
+	_generation_prompt = TextEdit.new()
+	_generation_prompt.placeholder_text = "输入生成要求：文本、立绘、场景或图标描述"
+	_generation_prompt.custom_minimum_size = Vector2(0, 54)
+	main.add_child(_generation_prompt)
+	var actions := HBoxContainer.new()
+	main.add_child(actions)
+	var run_button := Button.new()
+	run_button.text = "开始生成"
+	run_button.pressed.connect(_run_generation)
+	actions.add_child(run_button)
+	_generation_status = Label.new()
+	_generation_status.text = "等待配置"
+	_generation_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	actions.add_child(_generation_status)
+	_generation_output = RichTextLabel.new()
+	_generation_output.custom_minimum_size = Vector2(0, 60)
+	_generation_output.fit_content = true
+	_generation_output.scroll_active = true
+	main.add_child(_generation_output)
+	_load_api_settings_into_fields()
+	return panel
+
+
+func _load_api_settings_into_fields() -> void:
+	if _api == null:
+		return
+	_api_key_edit.text = str(_api.get("api_key"))
+	_base_url_edit.text = str(_api.get("base_url"))
+	_chat_model_edit.text = str(_api.get("chat_model"))
+	_image_model_edit.text = str(_api.get("image_model"))
+
+
+func _save_api_settings() -> void:
+	if _api == null:
+		_generation_status.text = "未找到 SenseNovaAPI 自动加载。"
+		return
+	_api.set("api_key", _api_key_edit.text.strip_edges())
+	_api.set("base_url", _base_url_edit.text.strip_edges())
+	_api.set("chat_model", _chat_model_edit.text.strip_edges())
+	_api.set("image_model", _image_model_edit.text.strip_edges())
+	_api.call("save_config")
+	_generation_status.text = "配置已保存到本机 user://。"
+
+
+func _run_generation() -> void:
+	if _api == null or not bool(_api.call("is_configured")):
+		_generation_status.text = "请先填写 API Key 并保存。"
+		return
+	var prompt := _generation_prompt.text.strip_edges()
+	if prompt.is_empty():
+		_generation_status.text = "请先输入生成要求。"
+		return
+	_generation_status.text = "请求已发送，等待商汤响应……"
+	_generation_output.clear()
+	if _generation_kind.selected == 0:
+		_api.call("request_chat", prompt, "你是《一梦千劫》的修仙游戏内容创作助手，请输出可直接用于游戏的中文内容。")
+	else:
+		_api.call("request_image", prompt)
+
+
+func _on_api_chat_finished(success: bool, content: String, _raw: Dictionary) -> void:
+	_generation_output.text = content
+	_generation_status.text = "文本生成完成。" if success else "文本生成失败。"
+	if success and _registry != null and not _generation_name.text.strip_edges().is_empty() and _registry.has_method("upsert_generated_content"):
+		_registry.call("upsert_generated_content", "ai_text", _generation_name.text.strip_edges(), {"text": content, "source": "sensenova_chat"}, "", [])
+		_refresh_all()
+
+
+func _on_api_image_saved(success: bool, local_path: String, _raw: Dictionary) -> void:
+	if success:
+		_generation_output.text = "图片已保存到：" + local_path
+		_generation_status.text = "图片生成并缓存完成。"
+		if _registry != null and not _generation_name.text.strip_edges().is_empty() and _registry.has_method("upsert_generated_content"):
+			_registry.call("upsert_generated_content", "ai_image", _generation_name.text.strip_edges(), {"prompt": _generation_prompt.text.strip_edges()}, local_path, [])
+			_refresh_all()
+
+
+func _on_api_request_failed(kind: String, message: String) -> void:
+	_generation_status.text = "%s 请求失败：%s" % [kind, message]
+	_generation_output.text = message
 
 func _build_manual_section() -> Control:
 	var panel := PanelContainer.new()
