@@ -290,9 +290,14 @@ func _on_search_changed(_text: String) -> void:
 	_refresh_all()
 
 
+func _on_record_selected(_index: int) -> void:
+	_show_selected_details()
+
+
 func _refresh_all() -> void:
 	if _registry == null or not is_instance_valid(_panel):
-		_status_label.text = "内容索引尚未准备好。"
+		if _status_label != null:
+			_status_label.text = "内容索引尚未准备好。"
 		return
 	_refresh_record_list()
 	_show_selected_details()
