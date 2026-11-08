@@ -29,6 +29,7 @@ var _manual_key: LineEdit
 var _manual_text: TextEdit
 var _manual_save: Button
 var _delete_button: Button
+var _apply_button: Button
 var _clear_button: Button
 var _refresh_button: Button
 var _api: Node = null
@@ -177,6 +178,13 @@ func _build_toolbar() -> Control:
 	_delete_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	_delete_button.pressed.connect(_delete_selected)
 	row.add_child(_delete_button)
+
+	_apply_button = Button.new()
+	_apply_button.text = "应用到当前存档"
+	_apply_button.custom_minimum_size = Vector2(126, 32)
+	_apply_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	_apply_button.pressed.connect(_apply_selected_to_game)
+	row.add_child(_apply_button)
 
 	_clear_button = Button.new()
 	_clear_button.text = "清空当前类"
@@ -535,6 +543,26 @@ func _save_manual_record() -> void:
 		_status_label.text = "已保存：%s / %s" % [kind, key]
 		_refresh_all()
 		_select_by_key(kind, key)
+
+
+func _apply_selected_to_game() -> void:
+	var record := _selected_record()
+	if record.is_empty():
+		_status_label.text = "请先选择一条 AI 内容。"
+		return
+	var manager := get_node_or_null("/root/SenseNovaContentManager")
+	if manager == null or not manager.has_method("apply_content_to_current_game"):
+		_status_label.text = "游戏内容应用服务未连接。"
+		return
+	var kind := str(record.get("kind", ""))
+	var key := str(record.get("key", ""))
+	var result_value: Variant = manager.call("apply_content_to_current_game", kind, key)
+	if result_value is Dictionary:
+		_status_label.text = str(result_value.get("message", "操作完成。"))
+	else:
+		_status_label.text = "应用操作未返回结果。"
+	_refresh_all()
+	_select_by_key(kind, key)
 
 
 func _delete_selected() -> void:
