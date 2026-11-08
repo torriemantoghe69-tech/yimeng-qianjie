@@ -3036,6 +3036,14 @@ func _open_skill_library(category: String = "功法") -> void:
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 8)
 		list.add_child(row)
+		var skill_texture := _ai_content_texture("skill_art", String(skill.get("name", skill_id)))
+		if skill_texture != null:
+			var skill_image := TextureRect.new()
+			skill_image.custom_minimum_size = Vector2(88, 88)
+			skill_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			skill_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			skill_image.texture = skill_texture
+			row.add_child(skill_image)
 		var label := _label(detail, 11, INK)
 		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(label)
