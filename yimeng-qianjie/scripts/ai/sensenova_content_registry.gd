@@ -33,6 +33,33 @@ func load_index() -> void:
 	_index = data
 
 
+func refresh_from_disk() -> int:
+	# 重新读取磁盘索引，并把曾经生成成功、但尚未写入索引的本地图片补登记。
+	load_index()
+	var imported := 0
+	var dir := DirAccess.open(AI_CACHE_PREFIX)
+	if dir == null:
+		return 0
+	dir.list_dir_begin()
+	var file_name := dir.get_next()
+	while file_name != "":
+		if not dir.current_is_dir():
+			var extension := file_name.get_extension().to_lower()
+			if extension in ["png", "jpg", "jpeg", "webp"]:
+				var absolute_path := AI_CACHE_PREFIX + file_name
+				var already_indexed := false
+				for record: Dictionary in list_records():
+					if str(record.get("local_path", "")) == absolute_path:
+						already_indexed = true
+						break
+				if not already_indexed:
+					set_record("local_image", file_name.get_basename(), {"source": "local_cache_scan", "note": "从本地图片缓存自动发现；原始名称未知。"}, absolute_path)
+					imported += 1
+		file_name = dir.get_next()
+	dir.list_dir_end()
+	return imported
+
+
 func save_index() -> bool:
 	_ensure_parent_dir(INDEX_PATH)
 	var file := FileAccess.open(INDEX_PATH, FileAccess.WRITE)
