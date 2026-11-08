@@ -305,12 +305,10 @@ func _extract_image_base64(data: Dictionary) -> String:
 func _save_base64_image_to_cache(image_b64: String, cache_key: String) -> String:
 	var bytes: PackedByteArray = Marshalls.base64_to_raw(image_b64)
 	if bytes.is_empty():
-		request_failed.emit("image", "Decoded base64 image is empty.")
 		return ""
 	var local_path := get_cached_image_path(cache_key)
 	var file := FileAccess.open(local_path, FileAccess.WRITE)
 	if file == null:
-		request_failed.emit("image", "Unable to write decoded image cache file: %s" % local_path)
 		return ""
 	file.store_buffer(bytes)
 	return local_path
