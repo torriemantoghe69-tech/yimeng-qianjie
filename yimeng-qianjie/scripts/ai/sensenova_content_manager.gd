@@ -289,15 +289,21 @@ func _on_chat_finished(success: bool, content: String, raw: Dictionary) -> void:
 	if text.find("姓名：") != -1 or text.find("名称：") != -1:
 		npc_generated.emit(success, content)
 		if success:
-			register_content("npc", _pending_record_key, _pending_record_data, "", [])
+			var saved_npc: Dictionary = _pending_record_data.duplicate(true)
+			saved_npc["text"] = content
+			register_content("npc", _pending_record_key, saved_npc, "", [])
 	elif text.find("类型：") != -1 and text.find("主要效果：") != -1:
 		item_generated.emit(success, content)
 		if success:
-			register_content("item", _pending_record_key, _pending_record_data, "", [])
+			var saved_item: Dictionary = _pending_record_data.duplicate(true)
+			saved_item["text"] = content
+			register_content("item", _pending_record_key, saved_item, "", [])
 	elif text.find("定位：") != -1 and text.find("核心机制：") != -1:
 		skill_generated.emit(success, content)
 		if success:
-			register_content("skill", _pending_record_key, _pending_record_data, "", [])
+			var saved_skill: Dictionary = _pending_record_data.duplicate(true)
+			saved_skill["text"] = content
+			register_content("skill", _pending_record_key, saved_skill, "", [])
 	elif text.find("标题：") != -1 and text.find("选择A：") != -1:
 		encounter_generated.emit(success, content)
 		if success:
