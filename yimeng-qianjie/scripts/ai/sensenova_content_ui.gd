@@ -51,6 +51,8 @@ var _pending_generation_prompt: String = ""
 var _batch_image_queue: Array[Dictionary] = []
 var _batch_image_total: int = 0
 var _batch_image_done: int = 0
+var _batch_image_failed: int = 0
+var _batch_image_last_error: String = ""
 
 func _ready() -> void:
 	_api = get_node_or_null("/root/SenseNovaAPI")
@@ -405,6 +407,8 @@ func _start_batch_illustrations() -> void:
 		return
 	_batch_image_queue.clear()
 	_batch_image_done = 0
+	_batch_image_failed = 0
+	_batch_image_last_error = ""
 	for item_name: Variant in GameData.TREASURES.keys():
 		var info: Dictionary = GameData.treasure_info(str(item_name))
 		_queue_batch_image("item_icon", str(item_name), "中国古典修仙游戏道具图标，单件物品居中，精致材质，纯净背景，无文字无水印。名称：" + str(item_name) + "。设定：" + str(info.get("desc", "")))
@@ -464,8 +468,8 @@ func _queue_batch_image(kind: String, key: String, prompt: String) -> void:
 func _process_next_batch_image() -> void:
 	if _batch_image_queue.is_empty():
 		_generation_run_button.disabled = false
-		_generation_status.text = "批量配图结束：成功 %d / 待生成 %d 张（已有图片已跳过）。" % [_batch_image_done, _batch_image_total]
-		_generation_output.text = "批量生成队列已处理完毕。失败项目不会覆盖已有图片，可再次点击批量生成重试。"
+		_generation_status.text = "批量配图结束：成功 %d 张，失败 %d 张 / 共 %d 张（已有图片已跳过）。" % [_batch_image_done, _batch_image_failed, _batch_image_total]
+		_generation_output.text = "批量生成队列已处理完毕。最后失败项：%s\n原因：%s" % [_pending_generation_name, _batch_image_last_error] if _batch_image_failed > 0 else "全部配图已生成并写入内容索引。"
 		_refresh_all()
 		_batch_image_total = 0
 		return
@@ -484,12 +488,17 @@ func _selected_generation_content_kind() -> String:
 
 
 func _on_api_request_failed(kind: String, message: String) -> void:
+	if _batch_image_total > 0:
+		_batch_image_failed += 1
+		_batch_image_last_error = message
+		_generation_status.text = "配图失败 %d 张，继续处理队列：%s" % [_batch_image_failed, _pending_generation_name]
+		_generation_output.text = "失败项目：%s\n%s" % [_pending_generation_name, message]
+		call_deferred("_process_next_batch_image")
+		return
 	if _generation_run_button != null:
 		_generation_run_button.disabled = false
 	_generation_status.text = "%s 请求失败：%s" % [kind, message]
 	_generation_output.text = message
-	if _batch_image_total > 0:
-		call_deferred("_process_next_batch_image")
 
 func _build_manual_section() -> Control:
 	var panel := PanelContainer.new()
