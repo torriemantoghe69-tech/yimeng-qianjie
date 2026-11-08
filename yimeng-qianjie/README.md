@@ -13,6 +13,22 @@
 - **天下探索**：区域、妖兽、特产、掉落与世界事件互相联动。
 - **轮回传承**：一世终结后结算轮回点，传承影响下一世的起点与成长。
 
+## 商汤接入
+
+已经加入自动加载单例 `SenseNovaAPI`，可直接在任意脚本中调用：
+
+```gdscript
+SenseNovaAPI.request_chat("生成一个元婴期妖修简介")
+SenseNovaAPI.request_image("古风修仙宗门山门，水墨氛围")
+```
+
+配置文件读取顺序：
+
+1. `user://sensenova_config.json`
+2. `res://sensenova_config.example.json`
+
+你只需要把 `user://sensenova_config.json` 里填上自己的商汤 API Key 和模型名即可。
+
 ## 主要脚本
 
 ```text
@@ -31,6 +47,7 @@ scripts/event_data.gd
 scripts/ink_background.gd
 scripts/music_manager.gd
 tools/smoke_test.gd
+scripts/ai/sensenova_api.gd
 ```
 
 ## 材料与精华
