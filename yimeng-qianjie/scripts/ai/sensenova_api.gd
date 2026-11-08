@@ -15,7 +15,7 @@ var chat_path: String = "/chat/completions"
 var image_path: String = "/images/generations"
 var chat_model: String = "sensenova-6.8-flash-lite"
 var image_model: String = "sensenova-u1.5-lite"
-var timeout_sec: int = 60
+var timeout_sec: int = 180
 
 
 func _ready() -> void:
@@ -102,6 +102,7 @@ func request_image(prompt: String, size: String = "1024x1024") -> void:
 		"response_format": "b64_json",
 		"watermark": false,
 		"prompt_extend": true,
+		"output_format": "png",
 	}
 	if image_model.strip_edges() != "":
 		payload["model"] = image_model
@@ -147,16 +148,23 @@ func _send_json_request(kind: String, url: String, payload: Dictionary, cache_ke
 func _on_request_completed(result: int, response_code: int, headers: PackedStringArray, body: PackedByteArray, kind: String, http: HTTPRequest, cache_key: String) -> void:
 	http.queue_free()
 	if result != HTTPRequest.RESULT_SUCCESS:
-		request_failed.emit(kind, "Network error: %d" % result)
+		request_failed.emit(kind, "网络请求失败（错误码 %d）。请检查网络、代理和 API 域名连通性。" % result)
 		return
+	var response_text := body.get_string_from_utf8()
 	if response_code < 200 or response_code >= 300:
-		request_failed.emit(kind, "Server returned HTTP %d" % response_code)
+		var error_detail := response_text.strip_edges()
+		if error_detail.length() > 1200:
+			error_detail = error_detail.substr(0, 1200)
+		var request_url := _join_url(base_url, image_path if kind == "image" else chat_path)
+		request_failed.emit(kind, "HTTP %d | URL: %s | %s" % [response_code, request_url, error_detail])
 		return
 
-	var response_text := body.get_string_from_utf8()
 	var parsed: Variant = JSON.parse_string(response_text)
 	if parsed is not Dictionary:
-		request_failed.emit(kind, "Server returned a non-JSON response.")
+		var response_preview := response_text.strip_edges()
+		if response_preview.length() > 800:
+			response_preview = response_preview.substr(0, 800)
+		request_failed.emit(kind, "服务器返回的不是 JSON。响应内容：%s" % response_preview)
 		return
 
 	var data: Dictionary = parsed
@@ -221,11 +229,11 @@ func _apply_config(data: Dictionary) -> void:
 	image_model = str(data.get("image_model", image_model))
 	if chat_model.strip_edges().is_empty():
 		chat_model = "sensenova-6.8-flash-lite"
-	if image_model.strip_edges().is_empty():
+	if image_model.strip_edges().is_empty() or image_model.strip_edges() == "sensenova-6.8-flash-lite":
 		image_model = "sensenova-u1.5-lite"
 	timeout_sec = int(data.get("timeout_sec", timeout_sec))
-	if timeout_sec <= 0:
-		timeout_sec = 60
+	if timeout_sec < 30:
+		timeout_sec = 180
 
 
 func _read_json_from_path(path: String) -> Dictionary:
