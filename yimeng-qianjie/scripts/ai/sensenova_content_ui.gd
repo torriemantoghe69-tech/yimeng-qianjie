@@ -14,6 +14,7 @@ const KIND_OPTIONS: Array[String] = [
 	"skill_art",
 	"background",
 	"encounter",
+	"local_image",
 ]
 
 var _registry: Node = null
@@ -175,7 +176,7 @@ func _build_toolbar() -> Control:
 	_refresh_button.text = "刷新"
 	_refresh_button.custom_minimum_size = Vector2(64, 32)
 	_refresh_button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-	_refresh_button.pressed.connect(_refresh_all)
+	_refresh_button.pressed.connect(_on_refresh_pressed)
 	row.add_child(_refresh_button)
 
 	_delete_button = Button.new()
@@ -565,6 +566,19 @@ func _toggle_panel() -> void:
 	_panel.visible = not _panel.visible
 	if _panel.visible:
 		_refresh_all()
+
+
+func _on_refresh_pressed() -> void:
+	if _registry == null:
+		_status_label.text = "内容索引未连接，无法读取本地缓存。"
+		return
+	var discovered := 0
+	if _registry.has_method("refresh_from_disk"):
+		discovered = int(_registry.call("refresh_from_disk"))
+	elif _registry.has_method("load_index"):
+		_registry.call("load_index")
+	_refresh_all()
+	_status_label.text = "已重新读取本地内容索引；新发现并登记 %d 张本地图片。切换类目到“local_image”可查看未匹配名称的图片文件。" % discovered
 
 
 func _on_filter_changed(_index: int) -> void:
