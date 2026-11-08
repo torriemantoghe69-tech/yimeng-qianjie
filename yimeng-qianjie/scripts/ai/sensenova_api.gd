@@ -103,7 +103,7 @@ func request_image(prompt: String, size: String = "1024x1024") -> void:
 	if image_model.strip_edges() != "":
 		payload["model"] = image_model
 
-	_send_json_request("image", _join_url(base_url, image_path), payload)
+	_send_json_request("image", _join_url(base_url, image_path), payload, _cache_key_from_prompt(prompt))
 
 
 func download_image_to_cache(image_url: String, cache_name: String = "") -> void:
@@ -125,11 +125,11 @@ func get_cached_image_path(key: String) -> String:
 	return _join_path(CACHE_DIR, "%s.png" % _safe_key(key))
 
 
-func _send_json_request(kind: String, url: String, payload: Dictionary) -> void:
+func _send_json_request(kind: String, url: String, payload: Dictionary, cache_key: String = "") -> void:
 	var http := HTTPRequest.new()
 	add_child(http)
 	http.timeout = float(timeout_sec)
-	http.request_completed.connect(_on_request_completed.bind(kind, http))
+	http.request_completed.connect(_on_request_completed.bind(kind, http, cache_key))
 
 	var headers: PackedStringArray = PackedStringArray([
 		"Authorization: Bearer %s" % api_key.strip_edges(),
@@ -141,7 +141,7 @@ func _send_json_request(kind: String, url: String, payload: Dictionary) -> void:
 		http.queue_free()
 
 
-func _on_request_completed(result: int, response_code: int, headers: PackedStringArray, body: PackedByteArray, kind: String, http: HTTPRequest) -> void:
+func _on_request_completed(result: int, response_code: int, headers: PackedStringArray, body: PackedByteArray, kind: String, http: HTTPRequest, cache_key: String) -> void:
 	http.queue_free()
 	if result != HTTPRequest.RESULT_SUCCESS:
 		request_failed.emit(kind, "Network error: %d" % result)
@@ -169,13 +169,14 @@ func _on_request_completed(result: int, response_code: int, headers: PackedStrin
 		var image_url := _extract_image_url(data)
 		if image_url.strip_edges() != "":
 			image_finished.emit(true, image_url, data)
-			var cache_key := _cache_key_from_prompt(response_text)
-			download_image_to_cache(image_url, cache_key)
+			var download_key := cache_key if cache_key.strip_edges() != "" else image_url
+			download_image_to_cache(image_url, download_key)
 			return
 
 		var image_b64 := _extract_image_base64(data)
 		if image_b64.strip_edges() != "":
-			var local_path := _save_base64_image_to_cache(image_b64, _cache_key_from_prompt(response_text))
+			var save_key := cache_key if cache_key.strip_edges() != "" else response_text
+			var local_path := _save_base64_image_to_cache(image_b64, save_key)
 			if local_path != "":
 				image_saved.emit(true, local_path, data)
 				return
